@@ -145,18 +145,18 @@ func (self *OLEFile) ReadMiniSector(sector uint32) []byte {
 	return self.ministream[start : start+to_read]
 }
 
-func (self *OLEFile) ReadFat(sector uint32) uint32 {
+func (self *OLEFile) ReadFat(sector uint32) (uint32, bool) {
 	if int(sector) >= len(self.Fat) {
-		return 0
+		return 0, false
 	}
-	return self.Fat[sector]
+	return self.Fat[sector], true
 }
 
-func (self *OLEFile) ReadMiniFat(sector uint32) uint32 {
+func (self *OLEFile) ReadMiniFat(sector uint32) (uint32, bool) {
 	if int(sector) >= len(self.MiniFat) {
-		return 0
+		return 0, false
 	}
-	return self.MiniFat[sector]
+	return self.MiniFat[sector], true
 }
 
 func (self *OLEFile) ReadChain(start uint32) []byte {
@@ -170,13 +170,18 @@ func (self *OLEFile) ReadMiniChain(start uint32) []byte {
 func (self *OLEFile) _ReadChain(
 	start uint32,
 	ReadSector func(uint32) []byte,
-	ReadFat func(sector uint32) uint32) []byte {
+	ReadFat func(sector uint32) (uint32, bool),
+) []byte {
 	check := make(map[uint32]bool)
 	result := []byte{}
 
 	for sector := start; sector != ENDOFCHAIN; {
 		result = append(result, ReadSector(sector)...)
-		next := ReadFat(sector)
+		next, ok := ReadFat(sector)
+		if !ok {
+			DebugPrintf("invalid sector %x in chain", sector)
+			return result
+		}
 		_, pres := check[next]
 		if pres {
 			DebugPrintf("infinite loop detected at %v to %v starting at %v",
