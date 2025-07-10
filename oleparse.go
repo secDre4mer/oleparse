@@ -279,7 +279,7 @@ func NewOLEFile(data []byte) (*OLEFile, error) {
 		}
 
 		next := dif_values[len(dif_values)-1]
-		for _, value := range dif_values[:len(dif_values)-2] {
+		for _, value := range dif_values[:len(dif_values)-1] {
 			if value != FREESECT {
 				self.FatSectors = append(self.FatSectors, value)
 			}
